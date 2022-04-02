@@ -308,8 +308,6 @@ int swap_hash(struct context *ctx)
         /* Clear the current hash table. */
         apr_hash_clear(ctx->curr);
 
-        /* TOOD: This logic seems sketchy. Could be the source of the segfaults. */
-        
         /* Swap pools. */
         apr_pool_clear(ctx->prev_pool);
 
@@ -502,20 +500,6 @@ int main(int argc, char **argv)
                        }
                }
         }
-
-	/* Process events */
-	/* while (!exiting) { */
-	/* 	err = ring_buffer__poll(rb, 100 /\* timeout, ms *\/); */
-	/* 	/\* Ctrl-C will cause -EINTR *\/ */
-	/* 	if (err == -EINTR) { */
-	/* 		err = 0; */
-	/* 		break; */
-	/* 	} */
-	/* 	if (err < 0) { */
-	/* 		printf("Error polling ring buffer: %d\n", err); */
-	/* 		break; */
-	/* 	} */
-	/* } */
 
 cleanup:
 	/* Clean up */
