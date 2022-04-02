@@ -9,7 +9,7 @@ This application uses XDP to drop packets from hosts that send a certain amount 
 
 ## Dependencies
 
->=linux-5.11
+\>=linux-5.11
 pkg-config
 make
 llvm/clang
