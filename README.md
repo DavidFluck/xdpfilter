@@ -18,6 +18,8 @@ USAGE: ./xdpfilter [-n <num-SYN-packets>] [-t <time-period-seconds>] [-i
   -V, --version              Print program version
 ```
 
+## Build
+
 ```
 sudo apt install build-essential clang libapr1 libapr1-dev libelf-dev libz-dev llvm m4 pkg-config
 make
