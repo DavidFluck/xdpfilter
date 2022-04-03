@@ -86,9 +86,9 @@ int xdp_prog_simple(struct xdp_md *ctx)
         bool found = bpf_map_lookup_elem(&blacklist, (void *)&host);
 	if (found) {
 		action = XDP_DROP;
-                bpf_printk("Would block: %d\n", iph->saddr);
+                // bpf_printk("Would block: %d\n", iph->saddr);
         } else {
-                bpf_printk("Would allow: %d\n", iph->saddr);
+                // bpf_printk("Would allow: %d\n", iph->saddr);
                 action = XDP_PASS;
         }
 

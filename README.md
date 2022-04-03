@@ -1,7 +1,7 @@
 ## Synopsis
 
 ```
-sudo apt install build-essential clang libapr1 libapr1-dev libelf-dev m4 pkg-config libz-dev
+sudo apt install build-essential clang libapr1 libapr1-dev libelf-dev libz-dev llvm m4 pkg-config
 make
 sudo ./xdpfilter
 ```
@@ -23,11 +23,12 @@ clang>=10\
 libapr1\
 libapr1-dev\
 libelf-dev (libbpf dependency)\
+libz-dev (libbpf dependency)\
 linux>=5.8\
+llvm\
 m4\
 make\
-pkg-config\
-libz-dev (libbpf dependency)
+pkg-config
 
 To install on Debian-based systems:
 
