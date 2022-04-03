@@ -451,7 +451,7 @@ int main(int argc, char **argv)
         }
 
         struct timespec sample_ts = {
-               .tv_sec = 20,
+               .tv_sec = env.time_period,
                .tv_nsec = 0
         };
 

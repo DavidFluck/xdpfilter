@@ -85,11 +85,7 @@ int xdp_prog_simple(struct xdp_md *ctx)
         
         bool found = bpf_map_lookup_elem(&blacklist, (void *)&host);
 	if (found) {
-		action = XDP_DROP;
-                // bpf_printk("Would block: %d\n", iph->saddr);
-        } else {
-                // bpf_printk("Would allow: %d\n", iph->saddr);
-                action = XDP_PASS;
+		return XDP_DROP;
         }
 
         /* IP packets can have variable-length headers. */
@@ -127,8 +123,8 @@ int xdp_prog_simple(struct xdp_md *ctx)
 
                 bpf_ringbuf_submit(e, 0);
 
-                return action;
+                return XDP_PASS;
         }
 
-        return action;
+        return XDP_PASS;
 }
