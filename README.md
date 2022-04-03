@@ -17,12 +17,18 @@ build-essential\
 clang>=10\
 libapr1\
 libapr1-dev\
-libelf-dev\
+libelf-dev (libbpf dependency)\
 linux>=5.8\
 m4\
 make\
 pkg-config\
-zlib1g-dev
+libz-dev (libbpf dependency)
+
+To install on Debian-based systems:
+
+```
+sudo apt install build-essential clang libapr1 libapr1-dev libelf-dev m4 pkg-config libz-dev
+```
 
 Some are necessary for the application itself, and others are for the vendored dependencies.
 
