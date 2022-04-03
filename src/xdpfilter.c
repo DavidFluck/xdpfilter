@@ -57,9 +57,9 @@ const char argp_program_doc[] =
 
 static const struct argp_option opts[] = {
 	{ "verbose", 'v', NULL, 0, "Verbose debug output" },
-	{ "num-packets", 'n', "NUM-PACKETS", 0, "Number of SYN packets to trigger on." },
-	{ "time-period", 's', "TIME-PERIOD", 0, "The previous interval, in seconds, to scan."},
-        { "interface", 'i', "INTERFACE", 0, "The interface name to attach to (e.g. eth0)."},
+	{ "num-packets", 'n', "NUM", 0, "Number of SYN packets to trigger on." },
+	{ "time-period", 's', "SECONDS", 0, "The previous interval, in seconds, to scan."},
+        { "interface", 'i', "IFNAME", 0, "The interface name to attach to (e.g. eth0)."},
         { 0 }
 };
 
