@@ -4,6 +4,8 @@
 #include <apr_skiplist.h>
 #include <argp.h>
 #include <arpa/inet.h>
+#include <errno.h>
+#include <net/if.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +20,6 @@
 #include "xdpfilter.skel.h"
 #include "xdp/libxdp.h"
 
-#define IFINDEX 2
 #define MAX_EVENTS 10
 
 const bool blocked = true;
@@ -27,6 +28,7 @@ static struct env {
 	bool verbose;
 	long num_packets;
         long time_period;
+        char *interface;
 } env;
 
 struct context {
@@ -55,8 +57,9 @@ const char argp_program_doc[] =
 
 static const struct argp_option opts[] = {
 	{ "verbose", 'v', NULL, 0, "Verbose debug output" },
-	{ "num-packets", 'n', "NUM-PACKETS", 3, "Number of SYN packets to trigger on." },
-	{ "time-period", 's', "TIME-PERIOD", 60, "The previous interval, in seconds, to scan."},
+	{ "num-packets", 'n', "NUM-PACKETS", 0, "Number of SYN packets to trigger on." },
+	{ "time-period", 's', "TIME-PERIOD", 0, "The previous interval, in seconds, to scan."},
+        { "interface", 'i', "INTERFACE", 0, "The interface name to attach to (e.g. eth0)."},
         { 0 }
 };
 
@@ -82,6 +85,9 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
                         argp_usage(state);
                 }
 		break;
+        case 'i':
+                env.interface = arg;
+                break;
 	case ARGP_KEY_ARG:
 		argp_usage(state);
 		break;
@@ -250,12 +256,12 @@ int calculate_rates(void *rec, const void *key, apr_ssize_t klen, const void *va
         void *dummy = malloc(sizeof(void *));
         int lost = bpf_map_lookup_elem(ctx->blacklist_fd, key, dummy);
         
-        if (rate > 3 && lost) {
+        if (rate > env.num_packets && lost) {
                 fprintf(stdout, "Adding host to blacklist.\n");
                 bpf_map_update_elem(ctx->blacklist_fd, key, &blocked, BPF_NOEXIST);
         }
 
-        if (rate <= 3 && !lost) {
+        if (rate <= env.num_packets && !lost) {
                 fprintf(stdout, "Removing host from blacklist.\n");
                 bpf_map_delete_elem(ctx->blacklist_fd, key);
         }
@@ -352,10 +358,22 @@ int main(int argc, char **argv)
         ctx.prev = apr_hash_make_custom(pool, hash_func_cb);
         ctx.curr = apr_hash_make_custom(pool, hash_func_cb);
 
-	/* Parse command line arguments */
-	int err = argp_parse(&argp, argc, argv, 0, NULL, NULL);
+	/* Parse command line arguments and set defaults. */
+        env.verbose = false;
+        env.num_packets = 3;
+        env.time_period = 60;
+        env.interface = "eth0";
+
+	int err = argp_parse(&argp, argc, argv, 0, NULL, &env);
 	if (err) {
 		return err;
+        }
+
+        /* Resolve interface name to ifindex. */
+        unsigned int ifindex = if_nametoindex(env.interface);
+        if (!ifindex) {
+                fprintf(stderr, "Error resolving interface name to index: %s\n", strerror(errno));
+                return errno;
         }
 
 	/* Set up libbpf errors and debug info callback */
@@ -377,7 +395,7 @@ int main(int argc, char **argv)
 
 	/* Load XDP program from our existing bpf_object struct. */
         struct xdp_program *prog = xdp_program__from_bpf_obj(skel->obj, "xdp_syn");
-        err = xdp_program__attach(prog, IFINDEX, XDP_MODE_SKB, 0);
+        err = xdp_program__attach(prog, ifindex, XDP_MODE_SKB, 0);
 
         if (err) {
                 goto cleanup;
@@ -505,7 +523,7 @@ cleanup:
 	/* Clean up */
 	ring_buffer__free(rb);
 	xdpfilter_bpf__destroy(skel);
-        xdp_program__detach(prog, IFINDEX, XDP_MODE_SKB, 0);
+        xdp_program__detach(prog, ifindex, XDP_MODE_SKB, 0);
         xdp_program__close(prog);
 
         apr_pool_destroy(pool);

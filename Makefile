@@ -4,7 +4,6 @@ SRC_DIR := src
 BUILD_DIR := build
 CLANG ?= clang
 LLVM_STRIP ?= llvm-strip
-#BPFTOOL ?= $(abspath ../tools/bpftool)
 BPFTOOL ?= /usr/sbin/bpftool
 LIBBPF_SRC := $(abspath vendor/libbpf/src)
 LIBBPF_OBJ := $(abspath $(BUILD_DIR)/libbpf.a)
