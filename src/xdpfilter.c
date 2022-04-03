@@ -50,15 +50,15 @@ const char *argp_program_bug_address = "<david@davidfluck.com>";
 const char argp_program_doc[] =
 "XDP rate limiter application.\n"
 "\n"
-"It watches incoming traffic for SYN requests, and drops packets if it detects "
-"more than -n SYN packets in the last -s seconds.\n"
+"Watches incoming traffic for SYN requests, and drops packets if it detects "
+"more than -n SYN packets in the last -t seconds on -i interface.\n"
 "\n"
-"USAGE: ./xdpratelimit [-n <num-SYN-packets>] [-m <time-period-seconds>] [-v]\n";
+"USAGE: ./xdpfilter [-n <num-SYN-packets>] [-t <time-period-seconds>] [-i <interface-name> ] [-v]\n";
 
 static const struct argp_option opts[] = {
 	{ "verbose", 'v', NULL, 0, "Verbose debug output" },
 	{ "num-packets", 'n', "NUM", 0, "Number of SYN packets to trigger on." },
-	{ "time-period", 's', "SECONDS", 0, "The previous interval, in seconds, to scan."},
+	{ "time-period", 't', "SECONDS", 0, "The previous interval, in seconds, to scan."},
         { "interface", 'i', "IFNAME", 0, "The interface name to attach to (e.g. eth0)."},
         { 0 }
 };
@@ -77,7 +77,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
                         argp_usage(state);
                 }
 		break;
-        case 's':
+        case 't':
                 errno = 0;
                 env.time_period = strtol(arg, NULL, 10);
                 if (errno || env.time_period <= 0) {
