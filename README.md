@@ -11,12 +11,20 @@ This application uses XDP to drop packets from hosts that send a certain amount 
 
 This was developed on an Ubuntu 20.04.1 Amazon EC2 instance, running Linux kernel 5.11.0-1022-aws. It should work on any Linux system running 5.8 or higher (5.8 being [necessary](https://nakryiko.com/posts/bpf-ringbuf/#bpf-ringbuf-vs-bpf-perfbuf) for the BPF ring buffer. See also: [BPF features by kernel version](https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md)).
 
-linux>=5.8\
+The dependencies are as follows:
+
+build-essential\
 clang>=10\
-pkg-config\
-make\
-gcc\
+libapr1\
+libapr1-dev\
+libelf-dev\
+linux>=5.8\
 m4\
+make\
+pkg-config\
+zlib1g-dev
+
+Some are necessary for the application itself, and others are for the vendored dependencies.
 
 The code was tested on both clang-10 and clang-12. (I initially started developing with clang-12, then verified that downgrading to clang-10, the version provided by the `clang` package on Ubuntu, continued to work, which it does.) Presumably, it should work on clang-11, but that is untested.
 
