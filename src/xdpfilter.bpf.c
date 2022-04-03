@@ -56,14 +56,14 @@ int xdp_prog_simple(struct xdp_md *ctx)
 
         offset = sizeof(*ethh);
 
-        /* Weird packet. Kernel's problem. */
+        /* Spooky packet. Drop. */
         if (data + offset > data_end) {
-                return XDP_ABORTED;
+                return XDP_DROP;
         }
 
         eth_type = ethh->h_proto;
 
-        /* Don't care about IPv6 for now. */
+        /* Don't care about IPv6 for now. This would be exploitable. */
         if (eth_type == bpf_ntohs(ETH_P_IPV6)) {
                 return XDP_PASS;
         }
@@ -76,7 +76,7 @@ int xdp_prog_simple(struct xdp_md *ctx)
         iph = data + offset;
 
         if (iph + 1 > data_end) {
-                return XDP_ABORTED;
+                return XDP_DROP;
         }
 
         /* Check if this is a blocked host, but don't return yet because we
@@ -95,8 +95,9 @@ int xdp_prog_simple(struct xdp_md *ctx)
         /* IP packets can have variable-length headers. */
         iphdr_len = iph->ihl * 4;
 
+        /* Spooky packet. Drop. */
         if (offset + iphdr_len > data_end) {
-		return XDP_ABORTED;
+		return XDP_DROP;
         }
 
         offset += iphdr_len;
@@ -104,9 +105,9 @@ int xdp_prog_simple(struct xdp_md *ctx)
         /* Take apart the TCP packet. */
         tcph = data + offset;
 
-        /* To the kernel with ye. */
+        /* Spooky packet. Drop. */
         if (tcph + 1 > data_end) {
-                return XDP_ABORTED;
+                return XDP_DROP;
         }
 
         /* Check for SYN requests, making sure to ignore SYN ACK. */
