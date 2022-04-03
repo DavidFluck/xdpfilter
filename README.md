@@ -87,6 +87,10 @@ I definitely want to improve error handling. Admittedly, I'm making certain happ
 
 I also do not necessarily trust all of my memory lifetime management (but I tend not to trust my fallible human ability to 100% correctly manipulate pointers anyway). Given the timeboxed nature of things, though, I would definitely want to look at memory use and memory lifetime more closely, given that this is written in C and improper memory management can lead to severe security problems (remote code execution, etc.).
 
+The bit where I have to make what I have spookily termed "ghost entries" in the `curr`ent hash table so rate calculations succeed feels kind of gross, but I haven't come up with anything better yet. I was hoping to avoid iterating through one of the hash tables for each swap, as that increases time complexity, but I painted myself into a corner somewhat with my "swap the hash table pointers" strategy.
+
 This is not the cleanest C in general. For example, I think I have some useless or unnecessary numeric casts in certain spots. I always like to have evidence for such things, but at first blush, my "some of this code smells a bit" professional spidey senses are tingling.
 
 I really want to write a man page for this. `man <command>` is so natural for me, and it's jarring when command line tools don't provide man pages, because then I have to run the help command again to pipe it through $PAGER.
+
+main() is kind of long. I should break things out into functions or separate files.
