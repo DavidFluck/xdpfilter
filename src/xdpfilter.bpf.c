@@ -114,6 +114,9 @@ int xdp_prog_simple(struct xdp_md *ctx)
         if (tcph->syn && !tcph->ack) {
                 e = bpf_ringbuf_reserve(&ringbuf, sizeof(*e), 0);
                 if (!e) {
+                        /* Exploitable. If we pass whenever we can't reserve
+                         * enough space for the ringbuffer, we fail open and
+                         * malicious hosts could continue to send us packets. */
                         return XDP_PASS;
                 }
 
@@ -124,8 +127,8 @@ int xdp_prog_simple(struct xdp_md *ctx)
 
                 bpf_ringbuf_submit(e, 0);
 
-                return XDP_PASS;
+                return action;
         }
 
-        return XDP_PASS;
+        return action;
 }
