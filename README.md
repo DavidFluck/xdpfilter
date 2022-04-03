@@ -6,8 +6,7 @@ XDP rate limiter application.
 Watches incoming traffic for SYN requests, and drops packets if it detects more
 than -n SYN packets in the last -t seconds on -i interface.
 
-USAGE: ./xdpfilter [-n <num-SYN-packets>] [-t <time-period-seconds>] [-i
-<interface-name> ] [-v]
+USAGE: ./xdpfilter [-n <num-SYN-packets>] [-t <time-period-seconds>] [-i <interface-name> ] [-v]
 
   -i, --interface=IFNAME     The interface name to attach to (e.g. eth0).
   -n, --num-packets=NUM      Number of SYN packets to trigger on.
