@@ -9,13 +9,16 @@ This application uses XDP to drop packets from hosts that send a certain amount 
 
 ## Dependencies
 
-\>=linux-5.11
-pkg-config
-make
-llvm/clang
-gcc
-m4
-Remap llc-12, llvm-strip-12, etc. to their non-versioned names.
+This was developed on an Ubuntu 20.04.1 Amazon EC2 instance, running Linux kernel 5.11.0-1022-aws. It should work on any Linux system running 5.8 or higher (5.8 being [necessary](https://nakryiko.com/posts/bpf-ringbuf/#bpf-ringbuf-vs-bpf-perfbuf) for the BPF ring buffer. See also: [BPF features by kernel version](https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md)).
+
+linux>=5.8\
+clang>=10\
+pkg-config\
+make\
+gcc\
+m4\
+
+The code was tested on both clang-10 and clang-12. (I initially started developing with clang-12, then verified that downgrading to clang-10, the version provided by the `clang` package on Ubuntu, continued to work, which it does.) Presumably, it should work on clang-11, but that is untested.
 
 ### libbpf
 
@@ -23,7 +26,7 @@ I vendor libbpf as a submodule. Some package repositories provide it, but vendor
 
 ### xdp-tools
 
-Similarly, I vendor xdp-tools as a submodule, although that's more out of necessity to provide libxdp, because, at least, the Ubuntu repositories don't seem to have it packaged. Therefore, building it is required.
+Similarly, I vendor xdp-tools as a submodule, although that's more out of necessity to provide libxdp, because the Ubuntu repositories don't seem to have it packaged. Therefore, building it is required.
 
 ## The Algorithm
 At first, I explored a few different ways of counting SYN requests and determining how many occurred within a sliding window, such as a ring buffer with a certain number of buckets representing slices of a time period. This works fine, but as I explored it further, I became concerned with the amount of space the bookkeeping would require, especially if a bad actor decided to send a large number of packets.
@@ -50,6 +53,12 @@ I decided to do the userland portion in C, partially because it made using libbp
 I leaned heavily on blog posts and reference material by Andrii Nakryiko, who is one of the authors (if not _the_ author) of libbpf. He also maintains a set of tools called [libbpf-bootstrap](https://github.com/libbpf/libbpf-bootstrap), which provides skeletons and helpful functionality for getting started with libbpf. I used the `bootstrap` example of libbpf-bootstrap to scaffold out this project.
 
 ### Kernel
+The kernel part is the most straightforward: I take apart packet headers until I can grab TCP flags and check for SYNs (but not SYN ACKs). Along the way, I grab the source IP, destination IP, and destination port to send to userspace for bookkeeping and output.
 
+One note, which I noted in the comments, is that, in the interest of time, I chose to elide handling VLAN and VLAN-within-VLAN Ethernet packets. To make this work for any network traffic, I would have to adjust the IP header offset by a variable amount, depending on the 802.11q/802.11ad header(s).
 
 ## Considerations
+
+## Improvements
+
+I definitely want to improve error handling. Admittedly, I'm making certain happy-path assumptions in spots, which are absolutely not guaranteed to be happy paths.
