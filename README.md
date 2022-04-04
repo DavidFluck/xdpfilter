@@ -121,25 +121,32 @@ One note is that, in the interest of time, I chose to elide handling VLAN and VL
 
 1. How would you make this solution better?
 
+   I address various specific concerns under [Improvements](#Improvements), but overall, I would:
+
+   - Improve the logging, including properly segmenting out various debug levels.
+   - Provide .deb and .rpm packages.
+   - Write a man page.
+   - Improve the stability of the program so I could be 100% certain that it work properly.
+
 1. Is it possible for this program to miss a connection?
 
-   Yes, I believe so, if the ring buffer gets too full. If `bpf_ringbuf_reserve` fails, we return `XDP_PASS` (to fail open). This is exploitable, though: if you can overwhelm the system and fill up the ring buffer, then all subsequent SYN packets would be passed through.
+   Yes, I believe so, if the ring buffer gets too full. If `bpf_ringbuf_reserve` fails, we return `XDP_PASS` (to fail open). This is exploitable, though: if you can overwhelm the system and fill up the ring buffer, then all subsequent SYN packets would be passed through. Of course, if you fail closed, bad actors could also potentially exploit that behavior. (DDoS mitigation is hard.)
 
 1. If you weren't following these requirements, how would you solve the problem of logging every new connection?
 
-   One option is to continue to use BPF, but just instrument the kernel and watch socket creations or something.
+   One option is to continue to use BPF, but just instrument the kernel and watch something like socket creation calls.
 
 1. Why did you choose make to write the build automation?
 
-   The code itself is in C, as are its dependencies (which themselves use make), so make was the natural choice. Make is also a workhorse: it's been around forever and it works.
+   The code itself is in C, as are its dependencies (which themselves use make), so make was the natural choice. Make is also a workhorse: it's been around forever, it's well-understood, and it works.
 
 1. Is there anything else you would test if you had more time?
 
-   I would throw every last weird combination of bits in a TCP packet at this thing until it stopped falling over.
+   I would throw every last weird combination of bits in a TCP packet at this thing until it stopped falling over. I would also want to properly handle VLAN Ethernet packets, which I cut in the interest of time.
 
 1. What is the most important tool, script, or technique you have for solving problems in production? Explain why this tool/script/technique is the most important.
 
-   I think technique is the most important, if I had to rank them. Specifically, the ability to sit down and properly debug things.
+   I think technique is the most important, if I had to rank them; specifically, the ability to sit down and properly debug things.
 
    I find it so difficult to properly explain how I go about debugging. Broadly, I would say it's a lot of deductive reasoning: you come up with a testable hypothesis about why something is (or, usually, is not) working the way it is, then you go about (dis)proving it. It's difficult to describe because it feels so automatic by now.
 
@@ -147,7 +154,7 @@ One note is that, in the interest of time, I chose to elide handling VLAN and VL
 
    Sometimes things just feel "off", or problems look like other problems you've seen before. Knowing how your system or application works is really important too, because all of those implementation details help inform your ability to debug. For example, I hadn't realized that `inet_ntoa()` uses a static buffer internally, so when I called it twice in a row in the same `fprinf` call, the second call site always "won" because the buffer was overwritten. Re-reading the man page cleared this up, and now I know this for next time, but had I known it before, I could've either avoided the bug entirely, or I could've more easily diagnosed the behavior instead of investigating the wrong things.
 
-   Finally, I don't think that any system is truly, fundamentally unknowable (at least ones that aren't incomprehensibly overwrought), given the right time and energy. Computers do exactly what you tell them, and bugs are just problems you haven't solved yet. If you sit down, and really think, and come up with hypotheses, and eliminate possibilities, you can usually solve them. We control the machines, they don't control us.
+   Finally, I don't believe that any system is truly, fundamentally unknowable (at least ones that aren't incomprehensibly overwrought), given the right time and energy. Computers do exactly what you tell them, and bugs are just problems you haven't solved yet. If you sit down, and really think, and come up with hypotheses, and eliminate possibilities, you can usually solve them. We control the machines, they don't control us.
 
 1. If you had to deploy this program to hundreds of servers, what would be your preferred method? Why?
 
