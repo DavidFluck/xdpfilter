@@ -65,6 +65,17 @@ static const struct argp_option opts[] = {
         { 0 }
 };
 
+/* Basic debug logging. */
+static void dlog(FILE* stream, enum Level level, const char *fmt, ...)
+{
+        if (level >= env.level) {
+                va_list args;
+                va_start(args, fmt);
+                vfprintf(stream, fmt, args);
+                va_end(args);
+        }
+}
+
 static error_t parse_arg(int key, char *arg, struct argp_state *state)
 {
 	switch (key) {
@@ -75,7 +86,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		errno = 0;
                 env.num_packets = strtol(arg, NULL, 10);
                 if (errno || env.num_packets <= 0) {
-                        fprintf(stderr, "Invalid number of packets: %s\n", arg);
+                        dlog(stderr, INFO, "Invalid number of packets: %s\n", arg);
                         argp_usage(state);
                 }
 		break;
@@ -83,7 +94,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
                 errno = 0;
                 env.time_period = strtol(arg, NULL, 10);
                 if (errno || env.time_period <= 0) {
-                        fprintf(stderr, "Invalid time period: %s\n", arg);
+                        dlog(stderr, INFO, "Invalid time period: %s\n", arg);
                         argp_usage(state);
                 }
 		break;
@@ -105,17 +116,6 @@ static const struct argp argp = {
 	.doc = argp_program_doc,
 };
 
-/* Basic debug logging. */
-static void dlog(FILE* stream, enum Level level, const char *fmt, ...)
-{
-        if (level >= env.level) {
-                va_list args;
-                va_start(args, fmt);
-                vfprintf(stream, fmt, args);
-                va_end(args);
-        }
-}
-
 static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args)
 {
 	if (level == LIBBPF_DEBUG && env.level != DEBUG) {
@@ -132,7 +132,7 @@ static void bump_memlock_rlimit(void)
 	};
 
 	if (setrlimit(RLIMIT_MEMLOCK, &rlim_new)) {
-		fprintf(stderr, "Failed to increase RLIMIT_MEMLOCK limit!\n");
+		dlog(stderr, INFO, "Failed to increase RLIMIT_MEMLOCK limit!\n");
 		exit(1);
 	}
 }
@@ -231,14 +231,13 @@ int do_hash_print(void *rec, const void *key, apr_ssize_t klen, const void *valu
 
         do {
                 val = apr_skiplist_element(node);
-                fprintf(stdout, " %hu", *(unsigned short *)val);
+                dlog(stdout, INFO, " %hu", *(unsigned short *)val);
 
                 /* Curiously, apr_skiplist_next doesn't actually use the list
                  * pointer. */
                 next = apr_skiplist_next(list, &node);
         } while(next);
 
-        /* fprintf(stdout, "\n"); */
         dlog(stdout, INFO, "\n");
 
         return 1;
@@ -321,8 +320,6 @@ int swap_hash(struct context *ctx)
         apr_hash_t *temp;
         apr_pool_t *temp_pool;
 
-        /* fprintf(stdout, "Swapping hash tables.\n"); */
-
         /* Swap hash tables. */
         temp = ctx->prev;
         ctx->prev = ctx->curr;
@@ -389,7 +386,7 @@ int main(int argc, char **argv)
         /* Resolve interface name to ifindex. */
         unsigned int ifindex = if_nametoindex(env.interface);
         if (!ifindex) {
-                fprintf(stderr, "Error resolving interface name to index: %s\n", strerror(errno));
+                dlog(stderr, INFO, "Error resolving interface name to index: %s\n", strerror(errno));
                 return errno;
         }
 
@@ -406,7 +403,7 @@ int main(int argc, char **argv)
 	/* Load and verify BPF application */
 	skel = xdpfilter_bpf__open();
 	if (!skel) {
-		fprintf(stderr, "Failed to open and load BPF skeleton\n");
+		dlog(stderr, INFO, "Failed to open and load BPF skeleton\n");
 		return 1;
 	}
 
@@ -422,7 +419,7 @@ int main(int argc, char **argv)
 	rb = ring_buffer__new(bpf_map__fd(skel->maps.ringbuf), handle_event, &ctx, NULL);
 	if (!rb) {
 		err = -1;
-		fprintf(stderr, "Failed to create ring buffer\n");
+		dlog(stderr, INFO, "Failed to create ring buffer\n");
 		goto cleanup;
 	}
 
@@ -433,14 +430,14 @@ int main(int argc, char **argv)
         int nfds, epollfd;
         epollfd = epoll_create1(0);
         if (epollfd == -1) {
-                fprintf(stderr, "epoll_create1\n");
+                dlog(stderr, INFO, "epoll_create1\n");
                 goto cleanup;
         }
 
         ev.events = EPOLLIN;
         ev.data.fd = ringbuf_fd;
         if (epoll_ctl(epollfd, EPOLL_CTL_ADD, ringbuf_fd, &ev) == -1) {
-                fprintf(stderr, "ringbuf_fd\n");
+                dlog(stderr, INFO, "ringbuf_fd\n");
                 goto cleanup;
         }
 
@@ -455,7 +452,7 @@ int main(int argc, char **argv)
         sample_ev.events = EPOLLIN;
         sample_ev.data.fd = sample_fd;
         if (epoll_ctl(epollfd, EPOLL_CTL_ADD, sample_fd, &sample_ev) == -1) {
-                fprintf(stderr, "sample_fd\n");
+                dlog(stderr, INFO, "sample_fd\n");
                 goto cleanup;
         }
 
@@ -463,7 +460,7 @@ int main(int argc, char **argv)
         measure_ev.data.fd = measure_fd;
 
         if (epoll_ctl(epollfd, EPOLL_CTL_ADD, measure_fd, &measure_ev) == -1) {
-                fprintf(stderr, "measure_fd\n");
+                dlog(stderr, INFO, "measure_fd\n");
                 goto cleanup;
         }
 
