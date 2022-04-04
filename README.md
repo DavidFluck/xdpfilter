@@ -25,6 +25,15 @@ make
 sudo ./xdpfilter
 ```
 
+## Output
+
+```
+2022-04-04T03:43:13+0000: Port scan detected: 3.21.196.164 -> 10.0.0.118 on ports 8000 8001 8002 8003
+2022-04-04T03:44:19+0000: Port scan detected: 3.21.196.164 -> 10.0.0.118 on ports 8004
+```
+
+Note: the output is somewhat misleading. Due to an implementation detail (swapping two hash tables for previous and current time periods), the output seems to suggest that there was a port scan on ports 8000 through 8003, and then again indepently on just 8004. In reality, this just means that in the past minute, a port scan has been detected, and subsequent lines are the ports that pushed the rate back up over the limit.
+
 ## Introduction
 
 This application uses XDP to drop packets from hosts that send a certain amount of SYN packets within a certain time period.
