@@ -54,7 +54,7 @@ libapr1-dev\
 libelf-dev (libbpf dependency)\
 libpcap-dev\
 libz-dev (libbpf dependency)\
-linux-tools (provides bpftool, use `$(uname -r)` for a specific release)
+linux-tools (provides bpftool, use `$(uname -r)` for a specific release)\
 linux>=5.8\
 llvm\
 m4\
