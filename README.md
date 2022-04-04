@@ -88,6 +88,15 @@ The code was tested on both clang-10 and clang-12. (I initially started developi
 
 I vendor libbpf as a submodule. Some package repositories provide it, but vendoring ensures that this code will always use a more up-to-date version.
 
+I've also applied [this unmerged patch](https://www.spinics.net/lists/bpf/msg49140.html) so the program no longer prints the following:
+
+```
+libbpf: elf: skipping unrecognized data section(7) xdp_metadata
+libbpf: elf: skipping unrecognized data section(7) xdp_metadata
+```
+
+The warnings are [harmless](https://www.mail-archive.com/dev@dpdk.org/msg233689.html), but they still clutter up output and are generally unhelpful, so I've removed them.
+
 ### xdp-tools
 
 Similarly, I vendor xdp-tools as a submodule, although that's more out of necessity to provide libxdp, because the Ubuntu repositories don't seem to have it packaged. Therefore, building it is required.
