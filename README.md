@@ -115,49 +115,47 @@ One note is that, in the interest of time, I chose to elide handling VLAN and VL
 
 1. How would you prove the the code is correct?
 
-I'm reminded of a Dijkstra quote: "Program testing can be a very effective way to show the presence of bugs, but is hopelessly inadequate for showing their absence." That being said, I would still test! It's easy to say "unit testing", but I have to admit, I don't know how straightforward it would be to do proper unit testing with the way I've written a bunch of my functions (at least without falling into the nightmare of mocking out the entire universe ahead of time). I would also generate various test cases (traffic patterns, Christmas tree TCP packets, etc.), and then throw them all at the program while it's running.
+   I'm reminded of a Dijkstra quote: "Program testing can be a very effective way to show the presence of bugs, but is hopelessly inadequate for showing their absence." That being said, I would still test! It's easy to say "unit testing", but I have to admit, I don't know how straightforward it would be to do proper unit testing with the way I've written a bunch of my functions (at least without falling into the nightmare of mocking out the entire universe ahead of time). I would also generate various test cases (traffic patterns, Christmas tree TCP packets, etc.), and then throw them all at the program while it's running.
 
-I would stochastically, "trial-by-fire" test the programtoo: let it run in the wild for a long period of time so people can send all manner of random, naughty traffic to it, and see if it blows up.
+   I would stochastically, "trial-by-fire" test the programtoo: let it run in the wild for a long period of time so people can send all manner of random, naughty traffic to it, and see if it blows up.
 
 1. How would you make this solution better?
 
 1. Is it possible for this program to miss a connection?
 
-Yes, I believe so, if the ring buffer gets too full. If `bpf_ringbuf_reserve` fails, we return `XDP_PASS` (to fail open). This is exploitable, though: if you can overwhelm the system and fill up the ring buffer, then all subsequent SYN packets would be passed through.
+   Yes, I believe so, if the ring buffer gets too full. If `bpf_ringbuf_reserve` fails, we return `XDP_PASS` (to fail open). This is exploitable, though: if you can overwhelm the system and fill up the ring buffer, then all subsequent SYN packets would be passed through.
 
 1. If you weren't following these requirements, how would you solve the problem of logging every new connection?
 
-One option is to continue to use BPF, but just instrument the kernel and watch socket creations or something.
+   One option is to continue to use BPF, but just instrument the kernel and watch socket creations or something.
 
 1. Why did you choose make to write the build automation?
 
-The code itself is in C, as are its dependencies (which themselves use make), so make was the natural choice. Make is also a workhorse: it's been around forever and it works.
+   The code itself is in C, as are its dependencies (which themselves use make), so make was the natural choice. Make is also a workhorse: it's been around forever and it works.
 
 1. Is there anything else you would test if you had more time?
 
-I would throw every last weird combination of bits in a TCP packet at this thing until it stopped falling over.
+   I would throw every last weird combination of bits in a TCP packet at this thing until it stopped falling over.
 
 1. What is the most important tool, script, or technique you have for solving problems in production? Explain why this tool/script/technique is the most important.
 
-I think technique is the most important, if I had to rank them. Specifically, the ability to sit down and properly debug things.
+   I think technique is the most important, if I had to rank them. Specifically, the ability to sit down and properly debug things.
 
-I find it so difficult to properly explain how I go about debugging. Broadly, I would say it's a lot of deductive reasoning: you come up with a testable hypothesis about why something is (or, usually, is not) working the way it is, then you go about (dis)proving it. It's difficult to describe because it feels so automatic by now.
+   I find it so difficult to properly explain how I go about debugging. Broadly, I would say it's a lot of deductive reasoning: you come up with a testable hypothesis about why something is (or, usually, is not) working the way it is, then you go about (dis)proving it. It's difficult to describe because it feels so automatic by now.
 
-Sometimes things come out of left field, though. For example, the utility library I'm using, the Apache Portable Runtime (APR), provides a skiplist implementation for list-based operations, which I use to keep track of host ports. Crucially, APR requires you to initialize your skiplists before you use them. I was seeing spooky behavior the other day, and I didn't seem to be getting anywhere. Then, while looking at one of the functions that instantiated skiplists, I happaned to notice that I hadn't initialized the new list I was creating. Some pattern recognition part of my brain looked at the code and said: "wait, shouldn't there be an init() function in here?" Suddenly, my bug was fixed.
+   Sometimes things come out of left field, though. For example, the utility library I'm using, the Apache Portable Runtime (APR), provides a skiplist implementation for list-based operations, which I use to keep track of host ports. Crucially, APR requires you to initialize your skiplists before you use them. I was seeing spooky behavior the other day, and I didn't seem to be getting anywhere. Then, while looking at one of the functions that instantiated skiplists, I happaned to notice that I hadn't initialized the new list I was creating. Some pattern recognition part of my brain looked at the code and said: "wait, shouldn't there be an init() function in here?" Suddenly, my bug was fixed.
 
-Sometimes things just feel "off", or problems look like other problems you've seen before. Knowing how your system or application works is really important too, because all of those implementation details help inform your ability to debug. For example, I hadn't realized that `inet_ntoa()` uses a static buffer internally, so when I called it twice in a row in the same `fprinf` call, the second call site always "won" because the buffer was overwritten. Re-reading the man page cleared this up, and now I know this for next time, but had I known it before, I could've either avoided the bug entirely, or I could've more easily diagnosed the behavior instead of investigating the wrong things.
+   Sometimes things just feel "off", or problems look like other problems you've seen before. Knowing how your system or application works is really important too, because all of those implementation details help inform your ability to debug. For example, I hadn't realized that `inet_ntoa()` uses a static buffer internally, so when I called it twice in a row in the same `fprinf` call, the second call site always "won" because the buffer was overwritten. Re-reading the man page cleared this up, and now I know this for next time, but had I known it before, I could've either avoided the bug entirely, or I could've more easily diagnosed the behavior instead of investigating the wrong things.
 
-Finally, I don't think any system is truly unknowable (at least ones that aren't incomprehensibly overwrought), given the right time and energy. Computers do exactly what you tell them, and bugs are just problems you haven't solved yet. If you sit down, and really think, and come up with hypotheses, and eliminate possibilities, you can usually figure it out.
+   Finally, I don't think that any system is truly, fundamentally unknowable (at least ones that aren't incomprehensibly overwrought), given the right time and energy. Computers do exactly what you tell them, and bugs are just problems you haven't solved yet. If you sit down, and really think, and come up with hypotheses, and eliminate possibilities, you can usually solve them. We control the machines, they don't control us.
 
 1. If you had to deploy this program to hundreds of servers, what would be your preferred method? Why?
 
-Especially since libbpf promises CO-RE (Compile Once, Run Everywhere), I'd be tempted to maintain deb/rpm packages and then just `apt/yum/whatever install` them across the fleet with some sort of appropriate automation. Ansible is my favorite for managing state like that, but there are always other contenders, and one should never overlook the simplicity of a `deploy.sh` script. This would let us manage the packages as we manage any other system software. Distros and package managers have already solved the harder parts of software distribution, so I think it makes sense to take advantage of that as much as possible.
+   Especially since libbpf promises CO-RE (Compile Once, Run Everywhere), I'd be tempted to maintain deb/rpm packages and then just `apt/yum/whatever install` them across the fleet with some sort of appropriate automation. Ansible is my favorite for managing state like that, but there are always other contenders, and one should never overlook the simplicity of a `deploy.sh` script. This would let us manage the packages as we manage any other system software. Distros and package managers have already solved the harder parts of software distribution, so I think it makes sense to take advantage of that as much as possible.
 
-Alternatively, if one managed to get this to work inside Docker, and assuming I'm already using Docker elsewhere (probably Kubernetes, etc.), that would be an option as well. I wouldn't go out of my way to shoehorn Docker into this if I didn't have to, though.
+   Alternatively, if one managed to get this to work inside Docker, and assuming I'm already using Docker elsewhere (probably Kubernetes, etc.), that would be an option as well. I wouldn't go out of my way to shoehorn Docker into this if I didn't have to, though.
 
 1. What is the hardest technical problem or outage you've had to solve in your career? Explain what made it so difficult?
-
-
 
 ## Improvements
 
