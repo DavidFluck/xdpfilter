@@ -24,8 +24,10 @@
 
 const bool blocked = true;
 
+enum Level { DEBUG, INFO };
+
 static struct env {
-	bool verbose;
+	enum Level level;
 	long num_packets;
         long time_period;
         char *interface;
@@ -67,7 +69,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 {
 	switch (key) {
 	case 'v':
-		env.verbose = true;
+                env.level = DEBUG;
 		break;
 	case 'n':
 		errno = 0;
@@ -103,9 +105,20 @@ static const struct argp argp = {
 	.doc = argp_program_doc,
 };
 
+/* Basic debug logging. */
+static void dlog(FILE* stream, enum Level level, const char *fmt, ...)
+{
+        if (level >= env.level) {
+                va_list args;
+                va_start(args, fmt);
+                vfprintf(stream, fmt, args);
+                va_end(args);
+        }
+}
+
 static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args)
 {
-	if (level == LIBBPF_DEBUG && !env.verbose) {
+	if (level == LIBBPF_DEBUG && env.level != DEBUG) {
 		return 0;
         }
 	return vfprintf(stderr, format, args);
@@ -148,6 +161,7 @@ int skiplist_compare(void *a, void*b)
  * interface. */
 void skiplist_free(void *elem)
 {
+        // free(elem);
         return;
 }
 
@@ -159,20 +173,22 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
         unsigned int *host_addr = (unsigned int *) apr_palloc(ctx2->curr_pool, sizeof(unsigned int));
         *host_addr = e->host;
         unsigned short *port = (unsigned short *) apr_palloc(ctx2->curr_pool, sizeof(unsigned short));
+        //unsigned short *port = (unsigned short *) malloc(sizeof(unsigned short));
         *port = e->port;
 
         /* Add host to "current" hash table. */
         void *val = apr_hash_get(ctx2->curr, host_addr, 4);
 
         struct apr_skiplist *list = (struct apr_skiplist *) apr_palloc(ctx2->curr_pool, sizeof(struct apr_skiplist *));
+        apr_skiplist_init(&list, ctx2->curr_pool);
+
+        /* Create a new skiplist to keep track of ports. */
         struct element *elem = (struct element *) apr_palloc(ctx2->curr_pool, sizeof(struct element));
 
         elem->list = list;
         elem->dest = e->dest;
 
         if (!val) {
-                /* Create a new skiplist to keep track of ports. */
-                apr_skiplist_init(&(elem->list), ctx2->curr_pool);
 
                 /* Add the port to the skiplist if it doesn't already exist
                  * (which it absolutely shouldn't). */
@@ -217,7 +233,7 @@ int do_hash_print(void *rec, const void *key, apr_ssize_t klen, const void *valu
 
         do {
                 val = apr_skiplist_element(node);
-                fprintf(stdout, " %d", *(unsigned int *)val);
+                fprintf(stdout, " %hu", *(unsigned short *)val);
 
                 /* Curiously, apr_skiplist_next doesn't actually use the list
                  * pointer. */
@@ -358,7 +374,7 @@ int main(int argc, char **argv)
         ctx.curr = apr_hash_make_custom(pool, hash_func_cb);
 
 	/* Parse command line arguments and set defaults. */
-        env.verbose = false;
+        env.level = INFO;
         env.num_packets = 3;
         env.time_period = 60;
         env.interface = "eth0";
