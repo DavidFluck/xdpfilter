@@ -20,7 +20,7 @@ USAGE: ./xdpfilter [-n <num-SYN-packets>] [-t <time-period-seconds>] [-i <interf
 ## Build
 
 ```
-sudo apt install build-essential clang libapr1 libapr1-dev libelf-dev libz-dev llvm m4 pkg-config
+sudo apt install build-essential clang gcc-multilib libapr1 libapr1-dev libelf-dev libpcapdev libz-dev linux-tools-$(uname -r) llvm m4 pkg-config
 make
 sudo ./xdpfilter
 ```
@@ -48,10 +48,13 @@ The package and kernel dependencies are as follows:
 
 build-essential\
 clang>=10\
+gcc-multilib\
 libapr1\
 libapr1-dev\
 libelf-dev (libbpf dependency)\
+libpcap-dev\
 libz-dev (libbpf dependency)\
+linux-tools (provides bpftool, use `$(uname -r)` for a specific release)
 linux>=5.8\
 llvm\
 m4\
