@@ -161,7 +161,6 @@ int skiplist_compare(void *a, void*b)
  * interface. */
 void skiplist_free(void *elem)
 {
-        // free(elem);
         return;
 }
 
@@ -173,7 +172,6 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
         unsigned int *host_addr = (unsigned int *) apr_palloc(ctx2->curr_pool, sizeof(unsigned int));
         *host_addr = e->host;
         unsigned short *port = (unsigned short *) apr_palloc(ctx2->curr_pool, sizeof(unsigned short));
-        //unsigned short *port = (unsigned short *) malloc(sizeof(unsigned short));
         *port = e->port;
 
         /* Add host to "current" hash table. */
@@ -268,20 +266,27 @@ int calculate_rates(void *rec, const void *key, apr_ssize_t klen, const void *va
         timerfd_gettime(ctx->sample_fd, curr_value);
 
         rate = prev_count * (((long int)(curr_value->it_value.tv_sec))/60.0) + curr_count;
+
         void *dummy = malloc(sizeof(void *));
         int lost = bpf_map_lookup_elem(ctx->blacklist_fd, key, dummy);
+
+        char buff[64] = {0};
+        time_t now = time(0);
+        strftime (buff, 64, "%Y-%m-%dT%H:%M:%S%z", localtime(&now));
         
         if (rate > env.num_packets && lost) {
-                fprintf(stdout, "Adding host to blacklist.\n");
+                //fprintf(stdout, "Adding host to blacklist.\n");
+                fprintf(stdout, "%s: Port scan detected: ", buff);
+                do_hash_print(rec, key, 4, value);
                 bpf_map_update_elem(ctx->blacklist_fd, key, &blocked, BPF_NOEXIST);
         }
 
         if (rate <= env.num_packets && !lost) {
-                fprintf(stdout, "Removing host from blacklist.\n");
+                // fprintf(stdout, "Removing host from blacklist.\n");
                 bpf_map_delete_elem(ctx->blacklist_fd, key);
         }
 
-        fprintf(stdout, "Rate: %lf\n", rate);
+        // fprintf(stdout, "Rate: %lf\n", rate);
 
         free(curr_value);
         free(dummy);
@@ -319,7 +324,7 @@ int swap_hash(struct context *ctx)
         apr_hash_t *temp;
         apr_pool_t *temp_pool;
 
-        fprintf(stdout, "Swapping hash tables.\n");
+        /* fprintf(stdout, "Swapping hash tables.\n"); */
 
         /* Swap hash tables. */
         temp = ctx->prev;
@@ -510,23 +515,23 @@ int main(int argc, char **argv)
                                read(events[n].data.fd, &buf, sizeof(uint64_t));
 
                                /* New hash tables. */
-                               fprintf(stdout, "curr:\n");
-                               apr_hash_do(hash_do_func_cb, NULL, ctx.curr);
+                               /* fprintf(stdout, "curr:\n"); */
+                               /* apr_hash_do(hash_do_func_cb, NULL, ctx.curr); */
 
-                               fprintf(stdout, "prev:\n");
-                               apr_hash_do(hash_do_func_cb, NULL, ctx.prev);    
+                               /* fprintf(stdout, "prev:\n"); */
+                               /* apr_hash_do(hash_do_func_cb, NULL, ctx.prev);     */
                        } else if (events[n].data.fd == measure_fd) {
                                /* Calculate rates. */
-                               fprintf(stdout, "Calculating rates.\n");
+                               /* fprintf(stdout, "Calculating rates.\n"); */
 
                                uint64_t buf;
                                read(events[n].data.fd, &buf, sizeof(uint64_t));
 
-                               fprintf(stdout, "curr:\n");
-                               apr_hash_do(hash_do_func_cb, NULL, ctx.curr);
+                               /* fprintf(stdout, "curr:\n"); */
+                               /* apr_hash_do(hash_do_func_cb, NULL, ctx.curr); */
 
-                               fprintf(stdout, "prev:\n");
-                               apr_hash_do(hash_do_func_cb, NULL, ctx.prev);
+                               /* fprintf(stdout, "prev:\n"); */
+                               /* apr_hash_do(hash_do_func_cb, NULL, ctx.prev); */
 
                                void *ctx2 = (void *)&ctx;
                                apr_hash_do(calculate_rates_cb, ctx2, ctx.curr);
