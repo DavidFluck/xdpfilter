@@ -75,7 +75,7 @@ int xdp_prog_simple(struct xdp_md *ctx)
         /* Take apart the IP packet. */
         iph = data + offset;
 
-        if (iph + 1 > data_end) {
+        if ((void *)iph + 1 > data_end) {
                 return XDP_DROP;
         }
 
@@ -92,7 +92,7 @@ int xdp_prog_simple(struct xdp_md *ctx)
         iphdr_len = iph->ihl * 4;
 
         /* Spooky packet. Drop. */
-        if (offset + iphdr_len > data_end) {
+        if ((void *)offset + iphdr_len > data_end) {
 		return XDP_DROP;
         }
 
@@ -102,7 +102,7 @@ int xdp_prog_simple(struct xdp_md *ctx)
         tcph = data + offset;
 
         /* Spooky packet. Drop. */
-        if (tcph + 1 > data_end) {
+        if ((void *)tcph + 1 > data_end) {
                 return XDP_DROP;
         }
 
