@@ -20,7 +20,18 @@ USAGE: ./xdpfilter [-n <num-SYN-packets>] [-t <time-period-seconds>] [-i <interf
 ## Build
 
 ```
-sudo apt install build-essential clang gcc-multilib libapr1 libapr1-dev libelf-dev libpcapdev libz-dev linux-tools-$(uname -r) llvm m4 pkg-config
+sudo apt install build-essential \
+                 clang \
+                 gcc-multilib \
+                 libapr1 \
+                 libapr1-dev \
+                 libelf-dev \
+                 libpcap-dev \
+                 libz-dev \
+                 linux-tools-$(uname -r) \
+                 llvm \
+                 m4 \
+                 pkg-config
 make
 sudo ./xdpfilter
 ```
@@ -64,7 +75,7 @@ pkg-config
 To install on Debian-based systems:
 
 ```
-sudo apt install build-essential clang gcc-multilib libapr1 libapr1-dev libelf-dev libpcapdev libz-dev linux-tools-$(uname -r) llvm m4 pkg-config
+sudo apt install build-essential clang gcc-multilib libapr1 libapr1-dev libelf-dev libpcap-dev libz-dev linux-tools-$(uname -r) llvm m4 pkg-config
 ```
 
 Some packages are necessary for the application itself, and others are for the vendored dependencies.
@@ -148,7 +159,7 @@ One note is that, in the interest of time, I chose to elide handling VLAN and VL
 
    I think technique is the most important, if I had to rank them; specifically, the ability to sit down and properly debug things.
 
-   I find it so difficult to properly explain how I go about debugging. Broadly, I would say it's a lot of deductive reasoning: you come up with a testable hypothesis about why something is (or, usually, is not) working the way it is, then you go about (dis)proving it. It's difficult to describe because it feels so automatic by now.
+   I find it difficult to explain how I go about debugging. Broadly, I would say it's a lot of deductive reasoning: you come up with a testable hypothesis about why something is (or, usually, is not) working the way it is, then you go about (dis)proving it. It's difficult to describe because it feels so automatic by now.
 
    Sometimes things come out of left field, though. For example, the utility library I'm using, the Apache Portable Runtime (APR), provides a skiplist implementation for list-based operations, which I use to keep track of host ports. Crucially, APR requires you to initialize your skiplists before you use them. I was seeing spooky behavior the other day, and I didn't seem to be getting anywhere. Then, while looking at one of the functions that instantiated skiplists, I happaned to notice that I hadn't initialized the new list I was creating. Some pattern recognition part of my brain looked at the code and said: "wait, shouldn't there be an init() function in here?" Suddenly, my bug was fixed.
 
@@ -168,7 +179,7 @@ One note is that, in the interest of time, I chose to elide handling VLAN and VL
 
 I definitely want to improve error handling. Admittedly, I'm making certain happy-path assumptions in spots, which are absolutely not guaranteed to be happy paths.
 
-I also do not necessarily trust all of my memory lifetime management (but I tend not to trust my fallible human ability to 100% correctly manipulate pointers anyway). Given the timeboxed nature of things, though, I would definitely want to look at memory use and memory lifetime more closely, especially considering that this is written in C and improper memory management can lead to severe security problems (remote code execution, etc.).
+I don't necessarily trust all of my memory lifetime management (but I tend not to trust my fallible human ability to 100% correctly manipulate pointers anyway). Given the timeboxed nature of things, though, I would definitely want to look at memory use and memory lifetime more closely, especially considering that this is written in C and improper memory management can lead to severe security problems (remote code execution, etc.).
 
 The bit where I have to make "ghost entries" in the `curr`ent hash table so rate calculations succeed feels kind of gross, but I haven't come up with anything better yet. I was hoping to avoid iterating through one of the hash tables for each swap, as that increases time complexity, but I painted myself into a corner somewhat with my "swap the hash table pointers" strategy.
 
@@ -177,3 +188,5 @@ This is not the cleanest C in general. For example, I think I have some useless 
 I really want to write a man page for this. `man <command>` is so natural for me, and it's jarring when command line tools don't provide man pages, because then I have to run the help command again to pipe it through $PAGER.
 
 main() is kind of long. I should break things out into functions or separate files.
+
+My normal git use involves more feature branches and informative commit messages.
