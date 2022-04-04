@@ -500,6 +500,7 @@ int main(int argc, char **argv)
                                 * function. */
                                ring_buffer__consume(rb);
                        } else if (events[n].data.fd == sample_fd) {
+                               /* Every time period, swap hash tables. */
                                uint64_t buf;
                                err = swap_hash(&ctx);
                                read(events[n].data.fd, &buf, sizeof(uint64_t));
