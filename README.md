@@ -105,9 +105,9 @@ One note is that, in the interest of time, I chose to elide handling VLAN and VL
 
 I definitely want to improve error handling. Admittedly, I'm making certain happy-path assumptions in spots, which are absolutely not guaranteed to be happy paths.
 
-I also do not necessarily trust all of my memory lifetime management (but I tend not to trust my fallible human ability to 100% correctly manipulate pointers anyway). Given the timeboxed nature of things, though, I would definitely want to look at memory use and memory lifetime more closely, given that this is written in C and improper memory management can lead to severe security problems (remote code execution, etc.).
+I also do not necessarily trust all of my memory lifetime management (but I tend not to trust my fallible human ability to 100% correctly manipulate pointers anyway). Given the timeboxed nature of things, though, I would definitely want to look at memory use and memory lifetime more closely, especially considering that this is written in C and improper memory management can lead to severe security problems (remote code execution, etc.).
 
-The bit where I have to make what I have spookily termed "ghost entries" in the `curr`ent hash table so rate calculations succeed feels kind of gross, but I haven't come up with anything better yet. I was hoping to avoid iterating through one of the hash tables for each swap, as that increases time complexity, but I painted myself into a corner somewhat with my "swap the hash table pointers" strategy.
+The bit where I have to make "ghost entries" in the `curr`ent hash table so rate calculations succeed feels kind of gross, but I haven't come up with anything better yet. I was hoping to avoid iterating through one of the hash tables for each swap, as that increases time complexity, but I painted myself into a corner somewhat with my "swap the hash table pointers" strategy.
 
 This is not the cleanest C in general. For example, I think I have some useless or unnecessary numeric casts in certain spots. I always like to have evidence for such things, but at first blush, my "some of this code smells a bit" professional spidey senses are tingling.
 
