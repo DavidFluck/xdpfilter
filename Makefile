@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
-V := 1
+V := 2
 SRC_DIR := src
 BUILD_DIR := build
 CLANG ?= clang
@@ -72,6 +72,8 @@ $(LIBBPF_OBJ): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(BUILD
 # Build libxdp
 $(LIBXDP_OBJ): $(wildcard $(LIBXDP_SRC)/*.[ch] $(LIBXDP_SRC)/Makefile) | $(BUILD_DIR)/libxdp
 	$(call msg,LIBXDP,$@)
+# xdp-tools seems to have a janky makefile, so we have to do this twice.
+	$(Q)$(MAKE) -C $(XDPTOOLS_DIR) BUILD_STATIC_ONLY=1 libxdp
 	$(Q)$(MAKE) -C $(XDPTOOLS_DIR) BUILD_STATIC_ONLY=1 OBJDIR=$(dir $@) DESTDIR=$(dir $@) libxdp
 
 # Build BPF code

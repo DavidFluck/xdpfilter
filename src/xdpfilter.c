@@ -45,7 +45,7 @@ struct element {
         unsigned int dest;
 } element;
 
-const char *argp_program_version = "xdpratelimit 0.1.0";
+const char *argp_program_version = "xdpfilter 0.2.0";
 const char *argp_program_bug_address = "<david@davidfluck.com>";
 const char argp_program_doc[] =
 "XDP rate limiter application.\n"
@@ -176,13 +176,13 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
 
                 /* Add the port to the skiplist if it doesn't already exist
                  * (which it absolutely shouldn't). */
-                apr_skiplist_replace_compare(elem->list, port, (apr_skiplist_freefunc)apr_skiplist_free, (apr_skiplist_compare)skiplist_compare);
+                apr_skiplist_replace_compare(elem->list, port, (apr_skiplist_freefunc)skiplist_free, (apr_skiplist_compare)skiplist_compare);
 
                 /* Add the element as the hash key value. */
                 apr_hash_set(ctx2->curr, host_addr, 4, elem);
         } else {
                 // apr_skiplist_replace_compare(((struct element *)val)->list, port, (apr_skiplist_freefunc)skiplist_free, (apr_skiplist_compare)skiplist_compare);
-                apr_skiplist_replace_compare(((struct element *)val)->list, port, (apr_skiplist_freefunc)apr_skiplist_free, (apr_skiplist_compare)skiplist_compare);
+                apr_skiplist_replace_compare(((struct element *)val)->list, port, (apr_skiplist_freefunc)skiplist_free, (apr_skiplist_compare)skiplist_compare);
         }
 
 	return 0;
