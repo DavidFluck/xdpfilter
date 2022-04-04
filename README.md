@@ -32,6 +32,8 @@ sudo apt install build-essential \
                  llvm \
                  m4 \
                  pkg-config
+git clone --recurse-submodules https://github.com/DavidFluck/xdpfilter.git
+cd xdpfilter
 make
 sudo ./xdpfilter
 ```
@@ -175,7 +177,7 @@ One note is that, in the interest of time, I chose to elide handling VLAN and VL
 
 1. What is the hardest technical problem or outage you've had to solve in your career? Explain what made it so difficult?
 
-   I'm not sure this is the hard_est_, but it was definitely a series of interesting challenges. At $dayjob, we have a small HTTP service in Golang that provisions resources inside Kubernetes. Until some months ago, we weren't keeping track of that resultant state anywhere. We have backups, but if something were to happen to a namespace or a cluster, the resources would have to be restored instead of put back into place with a tool like FluxCD. To solve this, we decided to migrate to git-based state storage for this service.
+   I'm not sure this is the hard _est_, but it was definitely a series of interesting challenges. At $dayjob, we have a small HTTP service in Golang that provisions resources inside Kubernetes. Until some months ago, we weren't keeping track of that resultant state anywhere. We have backups, but if something were to happen to a namespace or a cluster, the resources would have to be restored instead of put back into place with a tool like FluxCD. To solve this, we decided to migrate to git-based state storage for this service.
 
    The hardest part was translating git porcelain commands into git plumbing commands. The git library I used, git2go, provided a Go interface to all of libgit2, which means that I had access to a wide arary of functionality, but most of the git porcelain commands don't correspond one to one with the library functions. I read and re-read the Git Book several times to get a handle on git internals, so I could recreate things like branching. At one point (the details escape me and my notes are scarce), I had to debug a problem buried somewhere in libgit2, in its own dependency, libssh2. I ended up recreating a minimum working example in C (using libgit2) to attempt to reproduce the bug and more easily debug the underlying libraries. I did end up fixing the bug (I believe it came down to libssh2 not supporting SSH config files.)
 
