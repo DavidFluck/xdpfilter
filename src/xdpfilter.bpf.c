@@ -8,18 +8,6 @@
 
 struct trace_event_raw_bpf_trace_printk___x {};
 
-#undef bpf_printk
-#define bpf_printk(fmt, ...)                                                    \
-({                                                                              \
-     static char ____fmt[] = fmt "\0";                                       \
-     if (bpf_core_type_exists(struct trace_event_raw_bpf_trace_printk___x)) {\
-             bpf_trace_printk(____fmt, sizeof(____fmt) - 1, ##__VA_ARGS__);  \
-        } else {                                                                \
-             ____fmt[sizeof(____fmt) - 2] = '\n';                            \
-             bpf_trace_printk(____fmt, sizeof(____fmt), ##__VA_ARGS__);      \
-        }                                                                       \
- })
-
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
 
 /* IP blacklist. IPs are in host byte order. */

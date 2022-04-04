@@ -44,7 +44,7 @@ This was developed on an Ubuntu 20.04.1 Amazon EC2 instance, running Linux kerne
 
 Libbpf provides a vmlinux.h header file (vmlinux_511.h for us, symlinked to vmlinux.h), which is designed to smooth over differences across kernel versions. Libbpf provides one based on Linux 5.8, but I've generated one based on 5.11. Regardless, the header itself should cause Clang to to generate BPF CO-RE relocations, allowing our libbpf application to run on arbitrary kernel versions.
 
-The package and kernel dependencies are as follows:
+The package and kernel dependencies are as follows (assume a Debian-ish system):
 
 build-essential\
 clang>=10\
@@ -64,10 +64,10 @@ pkg-config
 To install on Debian-based systems:
 
 ```
-sudo apt install build-essential clang libapr1 libapr1-dev libelf-dev m4 pkg-config libz-dev
+sudo apt install build-essential clang gcc-multilib libapr1 libapr1-dev libelf-dev libpcapdev libz-dev linux-tools-$(uname -r) llvm m4 pkg-config
 ```
 
-Some are necessary for the application itself, and others are for the vendored dependencies.
+Some packages are necessary for the application itself, and others are for the vendored dependencies.
 
 The code was tested on both clang-10 and clang-12. (I initially started developing with clang-12, then verified that downgrading to clang-10, the version provided by the `clang` package on Ubuntu, continued to work, which it does.) Presumably, it should work on clang-11, but that is untested.
 

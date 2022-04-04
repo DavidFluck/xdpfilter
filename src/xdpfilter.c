@@ -491,9 +491,6 @@ int main(int argc, char **argv)
         timerfd_settime(sample_fd, 0, &sample_its, NULL);
         timerfd_settime(measure_fd, 0, &measure_its, NULL);
 
-        apr_hash_do_callback_fn_t *hash_do_func_cb = do_hash_print;
-        apr_hash_do_callback_fn_t *calculate_rates_cb = calculate_rates;
-
         while (!exiting) {
                nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
                if (nfds == -1) {
@@ -514,8 +511,7 @@ int main(int argc, char **argv)
                                uint64_t buf;
                                read(events[n].data.fd, &buf, sizeof(uint64_t));
 
-                               void *ctx2 = (void *)&ctx;
-                               apr_hash_do(calculate_rates_cb, ctx2, ctx.curr);
+                               apr_hash_do((apr_hash_do_callback_fn_t *)calculate_rates, (void *)&ctx, ctx.curr);
                        }
                }
         }
