@@ -117,7 +117,7 @@ One note is that, in the interest of time, I chose to elide handling VLAN and VL
 
    I'm reminded of a Dijkstra quote: "Program testing can be a very effective way to show the presence of bugs, but is hopelessly inadequate for showing their absence." That being said, I would still test! It's easy to say "unit testing", but I have to admit, I don't know how straightforward it would be to do proper unit testing with the way I've written a bunch of my functions (at least without falling into the nightmare of mocking out the entire universe ahead of time). I would also generate various test cases (traffic patterns, Christmas tree TCP packets, etc.), and then throw them all at the program while it's running.
 
-   I would stochastically, "trial-by-fire" test the programtoo: let it run in the wild for a long period of time so people can send all manner of random, naughty traffic to it, and see if it blows up.
+   I would stochastically "trial-by-fire" test the program too: let it run in the wild for a long period of time so people can send all manner of random, naughty traffic to it, and see if it blows up.
 
 1. How would you make this solution better?
 
