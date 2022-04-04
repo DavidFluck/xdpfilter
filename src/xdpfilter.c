@@ -175,7 +175,7 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
         *port = e->port;
 
         /* Add host to "current" hash table. */
-        void *val = apr_hash_get(ctx2->curr, host_addr, 4);
+        void *val = apr_hash_get(ctx2->curr, host_addr, sizeof(unsigned int));
 
         struct apr_skiplist *list = (struct apr_skiplist *) apr_palloc(ctx2->curr_pool, sizeof(struct apr_skiplist *));
         apr_skiplist_init(&list, ctx2->curr_pool);
@@ -193,7 +193,7 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
                 apr_skiplist_replace_compare(elem->list, port, (apr_skiplist_freefunc)skiplist_free, (apr_skiplist_compare)skiplist_compare);
 
                 /* Add the element as the hash key value. */
-                apr_hash_set(ctx2->curr, host_addr, 4, elem);
+                apr_hash_set(ctx2->curr, host_addr, sizeof(unsigned int), elem);
         } else {
                 apr_skiplist_replace_compare(((struct element *)val)->list, port, (apr_skiplist_freefunc)skiplist_free, (apr_skiplist_compare)skiplist_compare);
         }
@@ -313,7 +313,7 @@ int make_ghost(void *rec, const void *key, apr_ssize_t klen, const void *value)
                 new_elem->list = list;
                 new_elem->dest = old_elem->dest;
 
-                apr_hash_set(ctx->curr, key, 4, new_elem);
+                apr_hash_set(ctx->curr, host_addr, sizeof(unsigned int), new_elem);
         }
 
         return 1;
