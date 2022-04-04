@@ -223,8 +223,8 @@ int do_hash_print(void *rec, const void *key, apr_ssize_t klen, const void *valu
         src.s_addr = htonl(*(unsigned int *)key);
         dest.s_addr = htonl(((struct element *)value)->dest);
 
-        fprintf(stdout, "%s -> ", inet_ntoa(src));
-        fprintf(stdout, "%s on ports", inet_ntoa(dest));
+        dlog(stdout, INFO, "%s -> ", inet_ntoa(src));
+        dlog(stdout, INFO, "%s on ports", inet_ntoa(dest));
 
         void *val;
         void *next;
@@ -238,7 +238,8 @@ int do_hash_print(void *rec, const void *key, apr_ssize_t klen, const void *valu
                 next = apr_skiplist_next(list, &node);
         } while(next);
 
-        fprintf(stdout, "\n");
+        /* fprintf(stdout, "\n"); */
+        dlog(stdout, INFO, "\n");
 
         return 1;
 }
@@ -275,18 +276,14 @@ int calculate_rates(void *rec, const void *key, apr_ssize_t klen, const void *va
         strftime (buff, 64, "%Y-%m-%dT%H:%M:%S%z", localtime(&now));
         
         if (rate > env.num_packets && lost) {
-                //fprintf(stdout, "Adding host to blacklist.\n");
-                fprintf(stdout, "%s: Port scan detected: ", buff);
-                do_hash_print(rec, key, 4, value);
+                dlog(stdout, INFO, "%s: Port scan detected: ", buff);
+                do_hash_print(rec, key, sizeof(unsigned int), value);
                 bpf_map_update_elem(ctx->blacklist_fd, key, &blocked, BPF_NOEXIST);
         }
 
         if (rate <= env.num_packets && !lost) {
-                // fprintf(stdout, "Removing host from blacklist.\n");
                 bpf_map_delete_elem(ctx->blacklist_fd, key);
         }
-
-        // fprintf(stdout, "Rate: %lf\n", rate);
 
         free(curr_value);
         free(dummy);
@@ -500,7 +497,6 @@ int main(int argc, char **argv)
         while (!exiting) {
                nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
                if (nfds == -1) {
-                       fprintf(stderr, "epoll_wait\n");
                        goto cleanup;
                }
 
@@ -513,25 +509,10 @@ int main(int argc, char **argv)
                                uint64_t buf;
                                err = swap_hash(&ctx);
                                read(events[n].data.fd, &buf, sizeof(uint64_t));
-
-                               /* New hash tables. */
-                               /* fprintf(stdout, "curr:\n"); */
-                               /* apr_hash_do(hash_do_func_cb, NULL, ctx.curr); */
-
-                               /* fprintf(stdout, "prev:\n"); */
-                               /* apr_hash_do(hash_do_func_cb, NULL, ctx.prev);     */
                        } else if (events[n].data.fd == measure_fd) {
                                /* Calculate rates. */
-                               /* fprintf(stdout, "Calculating rates.\n"); */
-
                                uint64_t buf;
                                read(events[n].data.fd, &buf, sizeof(uint64_t));
-
-                               /* fprintf(stdout, "curr:\n"); */
-                               /* apr_hash_do(hash_do_func_cb, NULL, ctx.curr); */
-
-                               /* fprintf(stdout, "prev:\n"); */
-                               /* apr_hash_do(hash_do_func_cb, NULL, ctx.prev); */
 
                                void *ctx2 = (void *)&ctx;
                                apr_hash_do(calculate_rates_cb, ctx2, ctx.curr);
