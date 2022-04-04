@@ -181,7 +181,6 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
                 /* Add the element as the hash key value. */
                 apr_hash_set(ctx2->curr, host_addr, 4, elem);
         } else {
-                // apr_skiplist_replace_compare(((struct element *)val)->list, port, (apr_skiplist_freefunc)skiplist_free, (apr_skiplist_compare)skiplist_compare);
                 apr_skiplist_replace_compare(((struct element *)val)->list, port, (apr_skiplist_freefunc)skiplist_free, (apr_skiplist_compare)skiplist_compare);
         }
 
