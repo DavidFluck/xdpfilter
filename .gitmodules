@@ -1,6 +1,6 @@
 [submodule "vendor/libbpf"]
 	path = vendor/libbpf
-	url = https://github.com/libbpf/libbpf.git
+	url = https://github.com/DavidFluck/libbpf.git
 [submodule "vendor/xdp-tools"]
 	path = vendor/xdp-tools
 	url = https://github.com/xdp-project/xdp-tools.git
