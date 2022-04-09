@@ -127,68 +127,21 @@ I decided to do the userland portion in C, partially because it made using libbp
 
 I leaned heavily on blog posts and reference material by Andrii Nakryiko, who is one of the authors (if not _the_ author) of libbpf. He also maintains a set of tools called [libbpf-bootstrap](https://github.com/libbpf/libbpf-bootstrap), which provides skeletons and helpful functionality for getting started with libbpf. I used the `bootstrap` example of libbpf-bootstrap to scaffold out this project, and then tweaked things (Makefile, etc.) as needed.
 
+The program itself is single-threaded, relying on a single epoll loop. I watch three file descriptors: a sample timerfd, a measurement timerfd, and a ring buffer fd. In the context of this application, the measurement period is how frequently I calculate rates, and the sample period is the sliding window. By default, the measurement period is one second, and the sample period is 60 seconds, so I calculate a rate every second for the past 60 seconds. The ringbuffer file descriptor allows us to communicate with the eBPF program running in the kernel.
+
+When data is ready on each file descriptor, I do one of three things:
+
+For the ring buffer, when data is available, I call `ring_buffer__consume()`, which calls a handler callback function, `handle_event`, that I set up prior. This adds the given host and port to the `curr` hash table, or updates the entry if it already exists.
+
+For the measure timerfd, I calculate rates for each host in `curr`, and then determine whether or not to block that host. If I determine that I should block, I update a BPF map that the XDP program will check to determine whether or not it should drop packets. Otherwise, if the host is already blocked and it should no longer be, I remove the entry from the BPF map.
+
+For the sample timerfd, I execute some bookkeeping logic that needs to happen when we cross time periods, such as swapping the hash table pointers and memory pool pointers. Crucially, this also executes `make_ghost` for each entry in `prev`, which creates a corresponding zero entry in `curr`. This is necessary for rate calculation to occur properly. Consider a scenario where a host has stopped sending packets, and the hash tables are swapped. There is an entry in `prev` for this host, but not in `curr`. Because rate calculation is performed by looping over the entries in `curr`, if there is no corresponding entry in `curr`, the rate will be zero, which is incorrect. To mitigate this (because I had somewhat painted myself into a corner, by this point), I create dummy entries in `curr`, which will cause the rate calculation to happen correctly. And because of existing memory management code, I don't have to do any special handling when we're done with the dummy entries; they'll get swapped themselves and, eventually, cleaned up when `prev` falls off.
+
 ### Kernel
 
 The kernel part is the most straightforward: I take apart packet headers until I can grab TCP flags and check for SYNs (but not SYN ACKs). Along the way, I grab the source IP, destination IP, and destination port to send to userspace for bookkeeping and output.
 
 One note is that, in the interest of time, I chose to elide handling VLAN and VLAN-within-VLAN Ethernet packets. To make this work for any network traffic, I would have to adjust the IP header offset by a variable amount, depending on the 802.11q/802.11ad header(s).
-
-## Questions
-
-1. How would you prove the the code is correct?
-
-   I'm reminded of a Dijkstra quote: "Program testing can be a very effective way to show the presence of bugs, but is hopelessly inadequate for showing their absence." That being said, I would still test! It's easy to say "unit testing", but I have to admit, I don't know how straightforward it would be to do proper unit testing with the way I've written a bunch of my functions (at least without falling into the nightmare of mocking out the entire universe ahead of time). I would also generate various test cases (traffic patterns, Christmas tree TCP packets, etc.), and then throw them all at the program while it's running.
-
-   I would stochastically "trial-by-fire" test the program too: let it run in the wild for a long period of time so people can send all manner of random, naughty traffic to it, and see if it blows up.
-
-1. How would you make this solution better?
-
-   I address various specific concerns under [Improvements](#Improvements), but overall, I would:
-
-   - Improve the logging, including properly segmenting out various debug levels.
-   - Provide .deb and .rpm packages.
-   - Write a man page.
-   - Improve the stability of the program so I could be 100% certain that it work properly.
-
-1. Is it possible for this program to miss a connection?
-
-   Yes, I believe so, if the ring buffer gets too full. If `bpf_ringbuf_reserve` fails, we return `XDP_PASS` (to fail open). This is exploitable, though: if you can overwhelm the system and fill up the ring buffer, then all subsequent SYN packets would be passed through. Of course, if you fail closed, bad actors could also potentially exploit that behavior. (DDoS mitigation is hard.)
-
-1. If you weren't following these requirements, how would you solve the problem of logging every new connection?
-
-   One option is to continue to use BPF, but just instrument the kernel and watch something like socket creation calls.
-
-1. Why did you choose make to write the build automation?
-
-   The code itself is in C, as are its dependencies (which themselves use make), so make was the natural choice. Make is also a workhorse: it's been around forever, it's well-understood, and it works.
-
-1. Is there anything else you would test if you had more time?
-
-   I would throw every last weird combination of bits in a TCP packet at this thing until it stopped falling over. I would also want to properly handle VLAN Ethernet packets, which I cut in the interest of time.
-
-1. What is the most important tool, script, or technique you have for solving problems in production? Explain why this tool/script/technique is the most important.
-
-   I think technique is the most important, if I had to rank them; specifically, the ability to sit down and properly debug things.
-
-   I find it difficult to explain how I go about debugging. Broadly, I would say it's a lot of deductive reasoning: you come up with a testable hypothesis about why something is (or, usually, is not) working the way it is, then you go about (dis)proving it. It's difficult to describe because it feels so automatic by now.
-
-   Sometimes things come out of left field, though. For example, the utility library I'm using, the Apache Portable Runtime (APR), provides a skiplist implementation for list-based operations, which I use to keep track of host ports. Crucially, APR requires you to initialize your skiplists before you use them. I was seeing spooky behavior the other day, and my debugging attempts were fruitless. Then, while looking at one of the functions that instantiated skiplists, I happened to notice that I hadn't initialized the new list I was creating. Some pattern recognition part of my brain looked at the code and said: "wait, shouldn't there be an init() function in here?" Suddenly, my bug was fixed.
-
-   Sometimes things just feel "off", or problems look like other problems you've seen before. Knowing how your system or application works is really important too, because all of those implementation details help inform your ability to debug. For example, I hadn't realized that `inet_ntoa()` uses a static buffer internally, so when I called it twice in a row in the same `fprinf` call, the second call site always "won" because the buffer was overwritten. Re-reading the man page cleared this up, and now I know this for next time, but had I known it before, I could've either avoided the bug entirely, or I could've more easily diagnosed the behavior instead of investigating the wrong things.
-
-   Finally, I don't believe that any system is truly, fundamentally unknowable (at least ones that aren't incomprehensibly overwrought), given the right time and energy. Computers do exactly what you tell them, and bugs are just problems you haven't solved yet. If you sit down, and really think, and come up with hypotheses, and eliminate possibilities, you can usually solve them. We control the machines, they don't control us.
-
-1. If you had to deploy this program to hundreds of servers, what would be your preferred method? Why?
-
-   Especially since libbpf promises CO-RE (Compile Once, Run Everywhere), I'd be tempted to maintain deb/rpm packages and then just `apt/yum/whatever install` them across the fleet with some sort of appropriate automation. Ansible is my favorite for managing state like that, but there are always other contenders, and one should never overlook the simplicity of a `deploy.sh` script. This would let us manage the packages as we manage any other system software. Distros and package managers have already solved the harder parts of software distribution, so I think it makes sense to take advantage of that as much as possible.
-
-   Alternatively, if one managed to get this to work inside Docker, and assuming I'm already using Docker elsewhere (probably Kubernetes, etc.), that would be an option as well. I wouldn't go out of my way to shoehorn Docker into this if I didn't have to, though.
-
-1. What is the hardest technical problem or outage you've had to solve in your career? Explain what made it so difficult?
-
-   I'm not sure this is the hard _est_, but it was definitely a series of interesting challenges. At $dayjob, we have a small HTTP service in Golang that provisions resources inside Kubernetes. Until some months ago, we weren't keeping track of that resultant state anywhere. We have backups, but if something were to happen to a namespace or a cluster, the resources would have to be restored instead of put back into place with a tool like FluxCD. To solve this, we decided to migrate to git-based state storage for this service.
-
-   The hardest part was translating git porcelain commands into git plumbing commands. The git library I used, git2go, provided a Go interface to all of libgit2, which means that I had access to a wide arary of functionality, but most of the git porcelain commands don't correspond one to one with the library functions. I read and re-read the Git Book several times to get a handle on git internals, so I could recreate things like branching. At one point (the details escape me and my notes are scarce), I had to debug a problem buried somewhere in libgit2, in its own dependency, libssh2. I ended up recreating a minimum working example in C (using libgit2) to attempt to reproduce the bug and more easily debug the underlying libraries. I did end up fixing the bug (I believe it came down to libssh2 not supporting SSH config files.)
 
 ## Improvements
 
