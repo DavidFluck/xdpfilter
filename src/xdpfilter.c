@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
+/* SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause) */
 #include <apr_hash.h>
 #include <apr_pools.h>
 #include <apr_skiplist.h>
@@ -423,7 +423,7 @@ int main(int argc, char **argv)
                 goto cleanup;
         }
 
-	/* Set up ring buffer.  */
+	/* Set up ring buffer. */
 	rb = ring_buffer__new(bpf_map__fd(skel->maps.ringbuf), handle_event, &ctx, NULL);
 	if (!rb) {
 		err = -1;
