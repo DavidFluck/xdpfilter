@@ -158,7 +158,8 @@ int skiplist_compare(void *a, void*b)
 /* This might be bad, but because we don't plan to actually remove anything from
  * the skiplists, and because the pool will take care of cleanup anyway, we
  * don't bother defining a proper free function. This is a NOP to satisfy the
- * interface. */
+ * interface.
+ */
 void skiplist_free(void *elem)
 {
         return;
@@ -189,7 +190,8 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
         if (!val) {
 
                 /* Add the port to the skiplist if it doesn't already exist
-                 * (which it absolutely shouldn't). */
+                 * (which it absolutely shouldn't).
+                 */
                 apr_skiplist_replace_compare(elem->list, port, (apr_skiplist_freefunc)skiplist_free, (apr_skiplist_compare)skiplist_compare);
 
                 /* Add the element as the hash key value. */
@@ -204,7 +206,8 @@ static int handle_event(void *ctx, void *data, size_t data_sz)
 unsigned int hash_func(const char *key, apr_ssize_t *klen)
 {
         /* APR expects an unsigned integer hash value. Fortunately, that's
-         * exactly what an IPv4 address is. */
+         * exactly what an IPv4 address is.
+         */
 
         return (unsigned int)*key;
 }
@@ -234,7 +237,8 @@ int do_hash_print(void *rec, const void *key, apr_ssize_t klen, const void *valu
                 dlog(stdout, INFO, " %hu", *(unsigned short *)val);
 
                 /* Curiously, apr_skiplist_next doesn't actually use the list
-                 * pointer. */
+                 * pointer.
+                 */
                 next = apr_skiplist_next(list, &node);
         } while(next);
 
@@ -296,7 +300,8 @@ int make_ghost(void *rec, const void *key, apr_ssize_t klen, const void *value)
         struct element *old_elem = (struct element *)value;
 
         /* If the prev list has a nonzero length (i.e. we received requests),
-         * create a ghost entry of size 0 so rate calculations work properly. */
+         * create a ghost entry of size 0 so rate calculations work properly.
+         */
         if (apr_skiplist_size(old_elem->list) > 0) {
                 unsigned int *host_addr = (unsigned int *) apr_palloc(ctx->curr_pool, sizeof(unsigned int));
                 *host_addr = *(unsigned int *)key;
@@ -337,7 +342,8 @@ int swap_hash(struct context *ctx)
 
         /* Create "ghost" entries for rate calculation.
          * We copy everything non-zero from prev back
-         * into curr and set it to zero. */
+         * into curr and set it to zero.
+         */
         apr_hash_do((apr_hash_do_callback_fn_t *)make_ghost, (void *)ctx, ctx->prev);
 
         return 1;
@@ -353,7 +359,8 @@ int main(int argc, char **argv)
         atexit(apr_terminate);
 
         /* Context for our callback function so it has access to the hash
-         * tables and memory pools. */
+         * tables and memory pools.
+         */
         struct context ctx;
 
         /* We create two separate pools for the previous and current hash tables
@@ -365,7 +372,8 @@ int main(int argc, char **argv)
 
         /* Create our hash tables. prev is for the previous time period, and
          * curr is for the current time period. When we pass a time boundary, we
-         * free prev, set prev to curr, and set curr to a new hash table. */
+         * free prev, set prev to curr, and set curr to a new hash table.
+         */
         apr_hashfunc_t hash_func_cb = hash_func;
 
         /* We allocate the hash tables themselves from the parent pool. */
@@ -442,7 +450,8 @@ int main(int argc, char **argv)
         }
 
         /* We need two timers: one for the sampling interval, and one for the
-         * measurement interval. */
+         * measurement interval.
+         */
         int sample_fd = timerfd_create(CLOCK_MONOTONIC, 0);
         int measure_fd = timerfd_create(CLOCK_MONOTONIC, 0);
 
@@ -497,7 +506,8 @@ int main(int argc, char **argv)
                for (int n = 0; n < nfds; ++n) {
                        if (events[n].data.fd == ringbuf_fd) {
                                /* ring_buffer__consume runs our handler callback
-                                * function. */
+                                * function.
+                                */
                                ring_buffer__consume(rb);
                        } else if (events[n].data.fd == sample_fd) {
                                /* Every time period, swap hash tables. */
